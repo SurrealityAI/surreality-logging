@@ -243,12 +243,12 @@ UVICORN_LOG_CONFIG = {
     "disable_existing_loggers": False,
     "formatters": {
         "default": {
-            "()": "python_logging_config.StandardizedFormatter",
+            "()": "surreality_logging.StandardizedFormatter",
             "fmt": "[%(asctime)s] [%(levelname)s] [uvicorn] [%(name)s:%(lineno)d] %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
         "access": {
-            "()": "python_logging_config.StandardizedFormatter",
+            "()": "surreality_logging.StandardizedFormatter",
             "fmt": "[%(asctime)s] [%(levelname)s] [uvicorn.access] %(client_addr)s - \"%(request_line)s\" %(status_code)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
