@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="surreality-logging",
-    version="0.1.0",
+    version="0.1.3",
     author="Surreality AI",
     author_email="dev@surreality.ai",
     description="Standardized logging configuration for Surreality AI services",
