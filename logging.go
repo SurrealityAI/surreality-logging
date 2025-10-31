@@ -292,7 +292,8 @@ func GetLogger() *StandardLogger {
 
 // Debug logs a debug message
 func (l *StandardLogger) Debug(v ...interface{}) {
-	message := fmt.Sprint(v...)
+	message := fmt.Sprintln(v...)
+	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelDebug, message, 3)
 	l.logger.Print(formatted)
 }
@@ -306,7 +307,8 @@ func (l *StandardLogger) Debugf(format string, v ...interface{}) {
 
 // Info logs an info message
 func (l *StandardLogger) Info(v ...interface{}) {
-	message := fmt.Sprint(v...)
+	message := fmt.Sprintln(v...)
+	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelInfo, message, 3)
 	l.logger.Print(formatted)
 }
@@ -320,7 +322,8 @@ func (l *StandardLogger) Infof(format string, v ...interface{}) {
 
 // Warning logs a warning message
 func (l *StandardLogger) Warning(v ...interface{}) {
-	message := fmt.Sprint(v...)
+	message := fmt.Sprintln(v...)
+	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelWarning, message, 3)
 	l.logger.Print(formatted)
 
@@ -348,7 +351,8 @@ func (l *StandardLogger) Warningf(format string, v ...interface{}) {
 
 // Error logs an error message and sends to Sentry
 func (l *StandardLogger) Error(v ...interface{}) {
-	message := fmt.Sprint(v...)
+	message := fmt.Sprintln(v...)
+	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelError, message, 3)
 	l.logger.Print(formatted)
 
@@ -368,7 +372,8 @@ func (l *StandardLogger) Errorf(format string, v ...interface{}) {
 
 // Fatal logs a fatal message, sends to Sentry, and exits
 func (l *StandardLogger) Fatal(v ...interface{}) {
-	message := fmt.Sprint(v...)
+	message := fmt.Sprintln(v...)
+	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelFatal, message, 3)
 
 	// Send to Sentry as fatal error
