@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="surreality-logging",
-    version="0.1.3",
+    version="0.2.0",
     author="Surreality AI",
     author_email="dev@surreality.ai",
     description="Standardized logging configuration for Surreality AI services",
@@ -30,6 +30,6 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        # No external dependencies required
+        "loguru>=0.7.0",
     ],
 )

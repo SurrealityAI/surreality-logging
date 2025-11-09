@@ -1,13 +1,12 @@
 /*
 Standardized logging configuration for all Surreality AI Go services.
 
-Format: [YYYY-MM-DD HH:MM:SS,mmm] [LEVEL] [module:line] message
+Format: YYYY-MM-DD HH:MM:SS.mmm | LEVEL    | module:function:line - message
 
 This module provides:
 - Unified log format across all services
 - Automatic file:line tracking
 - Colored console output
-- Automatic Sentry integration for errors
 - Log rotation with size limits
 */
 package logging
@@ -21,8 +20,6 @@ import (
 	"runtime"
 	"sync"
 	"time"
-
-	"github.com/getsentry/sentry-go"
 )
 
 // ANSI color codes
@@ -70,34 +67,53 @@ func isTerminal() bool {
 }
 
 // formatLogMessage formats a log message in standardized format
-// Format: [YYYY-MM-DD HH:MM:SS,mmm] [LEVEL] [module:line] message
+// Format: YYYY-MM-DD HH:MM:SS.mmm | LEVEL    | module:function:line - message
 func formatLogMessage(level LogLevel, message string, skip int) string {
 	now := time.Now()
 
-	// Get caller information (file:line)
-	_, file, line, ok := runtime.Caller(skip)
+	// Get caller information (file:function:line)
+	pc, file, line, ok := runtime.Caller(skip)
 	var location string
 	if ok {
 		// Get just the filename without path
-		location = fmt.Sprintf("%s:%d", filepath.Base(file), line)
+		filename := filepath.Base(file)
+		// Remove .go extension
+		if len(filename) > 3 && filename[len(filename)-3:] == ".go" {
+			filename = filename[:len(filename)-3]
+		}
+
+		// Get function name
+		funcName := "unknown"
+		if fn := runtime.FuncForPC(pc); fn != nil {
+			fullName := fn.Name()
+			// Extract just the function name (after last dot)
+			for i := len(fullName) - 1; i >= 0; i-- {
+				if fullName[i] == '.' {
+					funcName = fullName[i+1:]
+					break
+				}
+			}
+		}
+
+		location = fmt.Sprintf("%s:%s:%d", filename, funcName, line)
 	} else {
-		location = "unknown:0"
+		location = "unknown:unknown:0"
 	}
 
-	// Format timestamp: [2025-10-20 21:30:45,123]
-	timestamp := fmt.Sprintf("[%04d-%02d-%02d %02d:%02d:%02d,%03d]",
+	// Format timestamp: 2025-10-20 21:30:45.123
+	timestamp := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d.%03d",
 		now.Year(), now.Month(), now.Day(),
 		now.Hour(), now.Minute(), now.Second(),
 		now.Nanosecond()/1000000)
 
 	// Apply color to level name if terminal
-	levelStr := string(level)
+	levelStr := fmt.Sprintf("%-8s", string(level)) // Pad to 8 characters
 	color := getColor(level)
 	if color != "" {
 		levelStr = color + levelStr + ColorReset
 	}
 
-	return fmt.Sprintf("%s [%s] [%s] %s", timestamp, levelStr, location, message)
+	return fmt.Sprintf("%s | %s | %s - %s", timestamp, levelStr, location, message)
 }
 
 // RotatingFileWriter implements log rotation based on file size
@@ -326,13 +342,6 @@ func (l *StandardLogger) Warning(v ...interface{}) {
 	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelWarning, message, 3)
 	l.logger.Print(formatted)
-
-	// Add to Sentry as breadcrumb
-	sentry.AddBreadcrumb(&sentry.Breadcrumb{
-		Message:  message,
-		Level:    sentry.LevelWarning,
-		Category: "log",
-	})
 }
 
 // Warningf logs a formatted warning message
@@ -340,58 +349,37 @@ func (l *StandardLogger) Warningf(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	formatted := formatLogMessage(LevelWarning, message, 3)
 	l.logger.Print(formatted)
-
-	// Add to Sentry as breadcrumb
-	sentry.AddBreadcrumb(&sentry.Breadcrumb{
-		Message:  message,
-		Level:    sentry.LevelWarning,
-		Category: "log",
-	})
 }
 
-// Error logs an error message and sends to Sentry
+// Error logs an error message
 func (l *StandardLogger) Error(v ...interface{}) {
 	message := fmt.Sprintln(v...)
 	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelError, message, 3)
 	l.logger.Print(formatted)
-
-	// Send to Sentry as error
-	sentry.CaptureMessage(message)
 }
 
-// Errorf logs a formatted error message and sends to Sentry
+// Errorf logs a formatted error message
 func (l *StandardLogger) Errorf(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	formatted := formatLogMessage(LevelError, message, 3)
 	l.logger.Print(formatted)
-
-	// Send to Sentry as error
-	sentry.CaptureMessage(message)
 }
 
-// Fatal logs a fatal message, sends to Sentry, and exits
+// Fatal logs a fatal message and exits
 func (l *StandardLogger) Fatal(v ...interface{}) {
 	message := fmt.Sprintln(v...)
 	message = message[:len(message)-1] // Remove trailing newline
 	formatted := formatLogMessage(LevelFatal, message, 3)
 
-	// Send to Sentry as fatal error
-	sentry.CaptureMessage(message)
-	sentry.Flush(2 * time.Second)
-
 	// Log and exit
 	l.logger.Fatal(formatted)
 }
 
-// Fatalf logs a formatted fatal message, sends to Sentry, and exits
+// Fatalf logs a formatted fatal message and exits
 func (l *StandardLogger) Fatalf(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	formatted := formatLogMessage(LevelFatal, message, 3)
-
-	// Send to Sentry as fatal error
-	sentry.CaptureMessage(message)
-	sentry.Flush(2 * time.Second)
 
 	// Log and exit
 	l.logger.Fatal(formatted)
